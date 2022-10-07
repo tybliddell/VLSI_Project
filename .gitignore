@@ -1,0 +1,39 @@
+## VS code stuffs
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+## Modelsim
+[_@]*
+
+# ignore compilation output of ModelSim
+*.mti
+*.dat
+*.dbs
+*.psm
+*.bak
+*.cmp
+*.jpg
+*.html
+*.bsf
+
+# ignore simulation output of ModelSim
+wlf*
+*.wlf
+*.vstf
+*.ucdb
+cov*/
+transcript*
+sc_dpiheader.h
+vsim.dbg
+
+## May want to add Synopsys stuff in the future
