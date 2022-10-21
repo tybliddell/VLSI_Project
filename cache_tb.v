@@ -43,7 +43,24 @@ module cache_tb;
         reset_cache();
 
         $display("Beginning tests");
-
+        cpu_request = { 1'd1, 16'd55, 16'd13 };
+        cpu_request_ready = 1'd1;
+        while(memory_request_ready == 1'd0)
+            #period;
+        memory_response = 16'd55;
+        memory_response_ready = 1'd1;
+        while(data_out == 1'd0)
+            #period;
+        $display(data_out);
+        cpu_request_ready = 1'd0;
+        cpu_request = 33'd0;
+        #period;
+        cpu_request = { 1'd0, 16'd128, 16'd13 };
+        cpu_request_ready = 1'd1;
+        while(data_out_ready == 1'd0)
+            #period;
+        $display(data_out);
+        
 
         $stop;
     end

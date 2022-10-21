@@ -43,9 +43,11 @@ module cache(
     integer i;
     parameter RESET = 3'd0;
     parameter IDLE = 3'd1;
-    parameter COMPARE_TAG = 3'd2;
-    parameter WAIT_ON_MEMORY = 3'd3;
-    parameter ALLOCATE = 3'd4;
+    parameter _IDLE = 3'd2;
+    parameter COMPARE_TAG = 3'd3;
+    parameter WAIT_ON_MEMORY = 3'd4;
+    parameter _WAIT_ON_MEMORY = 3'd5;
+    parameter ALLOCATE = 3'd6;
     reg [2:0] state = IDLE;
     reg [2:0] next_state = IDLE;
 
@@ -69,11 +71,11 @@ module cache(
                 data_out_ready <= 1'd0;
                 next_state <= IDLE;
             end
-            IDLE: begin
+            IDLE, _IDLE: begin
                 if(cpu_request_ready)
                     next_state <= COMPARE_TAG;
                 else
-                    next_state <= IDLE;
+                    next_state <= state == IDLE ? _IDLE : IDLE;
                 memory_request <= 33'd0;
                 memory_request_ready <= 1'd0;
                 data_out <= data_out;
@@ -107,7 +109,9 @@ module cache(
                 //Write
                 else begin
                     // Write to cache, and send a memory request
-                    cache_mem[cpu_request[`CPU_REQUEST_INDEX]][`CACHE_MEM_TAG] <= cpu_request[`CPU_REQUEST_DATA];
+                    cache_mem[cpu_request[`CPU_REQUEST_INDEX]][`CACHE_MEM_TAG] <= cpu_request[`CPU_REQUEST_TAG];
+                    cache_mem[cpu_request[`CPU_REQUEST_INDEX]][`CACHE_MEM_DATA] <= cpu_request[`CPU_REQUEST_DATA];
+                    cache_mem[cpu_request[`CPU_REQUEST_INDEX]][`CACHE_MEM_VALIDITY] <= 1'd1;
                     memory_request <= { `WRITE, cpu_request[`CPU_REQUEST_DATA], cpu_request[`CPU_REQUEST_ADDRESS] };
                     memory_request_ready <= 1'd1;
                     data_out <= data_out;
@@ -115,10 +119,10 @@ module cache(
                     next_state <= WAIT_ON_MEMORY;
                 end
             end
-            WAIT_ON_MEMORY: begin
+            WAIT_ON_MEMORY, _WAIT_ON_MEMORY: begin
                 if(memory_response_ready == 1'b1) begin
                     //write memory_response to cache
-                    cache_mem[cpu_request[`CPU_REQUEST_INDEX]][`CACHE_MEM_TAG] <= memory_response;
+                    cache_mem[cpu_request[`CPU_REQUEST_INDEX]][`CACHE_MEM_DATA] <= memory_response;
                     data_out_ready <= 1'd1;
                     memory_request <= 33'd0;
                     memory_request_ready <= 1'd0;
@@ -129,7 +133,7 @@ module cache(
                     next_state <= IDLE;
                 end
                 else begin
-                    next_state <= WAIT_ON_MEMORY;
+                    next_state <= state == WAIT_ON_MEMORY ? _WAIT_ON_MEMORY : WAIT_ON_MEMORY;
                     memory_request <= memory_request;
                     memory_request_ready <= 1'd1;
                     data_out <= data_out;
