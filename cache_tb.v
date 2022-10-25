@@ -39,29 +39,78 @@ module cache_tb;
         end
     endtask
 
+    task write_value;
+        input [15:0] data, address;
+        begin
+            cpu_request = { 1'd1, data, address };
+            cpu_request_ready = 1'd1;
+
+            while(data_out_ready == 1'd0 && memory_request_ready == 1'd0) begin
+                #period;
+            end
+            // simulate memory
+            if(memory_request_ready == 1'd1) begin
+                memory_response = data;
+                memory_response_ready = 1'd1;
+                // wait for data
+                while(data_out_ready == 1'd0) begin
+                    #period;
+                end
+            end
+
+            cpu_request = 33'd0;
+            cpu_request_ready = 1'd0;
+            memory_response = 16'd0;
+            memory_response_ready = 1'd0;
+        end
+    endtask
+
+    task read_value;
+        input [15:0] expected_data, address;
+        begin
+            cpu_request = { 1'd0, 16'd0, address };
+            cpu_request_ready = 1'd1;
+            while(data_out_ready == 1'd0 && memory_request_ready == 1'd0) begin
+                #period;
+            end
+            // simulate memory
+            if(memory_request_ready == 1'd1) begin
+                memory_response = expected_data;
+                memory_response_ready = 1'd1;
+                // wait for data
+                while(data_out_ready == 1'd0) begin
+                    #period;
+                end
+            end
+
+            cpu_request = 33'd0;
+            cpu_request_ready = 1'd0;
+            memory_response = 16'd0;
+            memory_response_ready = 1'd0;
+        end
+    endtask
+
+    task check_data;
+        input [7:0] expected;
+        begin
+            if(data_out != expected) begin
+                $display("[error] result:%b expected:%b\nError on Line Number = %0d",data_out,55,`__LINE__);
+                $stop;
+            end
+        end
+    endtask
+
     initial begin
         reset_cache();
 
         $display("Beginning tests");
-        cpu_request = { 1'd1, 16'd55, 16'd13 };
-        cpu_request_ready = 1'd1;
-        while(memory_request_ready == 1'd0)
-            #period;
-        memory_response = 16'd55;
-        memory_response_ready = 1'd1;
-        while(data_out == 1'd0)
-            #period;
-        $display(data_out);
-        cpu_request_ready = 1'd0;
-        cpu_request = 33'd0;
-        #period;
-        cpu_request = { 1'd0, 16'd128, 16'd13 };
-        cpu_request_ready = 1'd1;
-        while(data_out_ready == 1'd0)
-            #period;
-        $display(data_out);
-        
+        write_value(16'd55, 16'd13);
+        check_data(8'd55);
 
+        read_value(16'd55, 16'd13);
+        check_data(8'd55);
+            
+        $display("All tests passed :)");
         $stop;
     end
 endmodule

@@ -29,7 +29,7 @@ module cache_coherenter(
     * coming from. Or we could have two inputs and
     * separate them by left cahce and right cache.
     */
-    input [32:0] left_cache_change, right_cache_change
+    input [32:0] left_cache_change, right_cache_change,
 
     output [32:0] right_cache_write, left_cache_write
     /* Another thought: in our cache statemachine, 
