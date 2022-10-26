@@ -38,7 +38,7 @@ module cache_tb;
             #period;
             reset = 1'd1;
             #period;
-            $display("Cache reset");
+            $display("[status] cache reset");
         end
     endtask
 
@@ -114,7 +114,7 @@ module cache_tb;
         input [7:0] expected;
         begin
             if(data_out != expected) begin
-                $display("[error] result:%b expected:%b\nError on Line Number = %0d",data_out,55,`__LINE__);
+                $display("[ERROR] result:%b expected:%b\nError on Line Number = %0d",data_out,55,`__LINE__);
                 $stop;
             end
         end
@@ -123,7 +123,7 @@ module cache_tb;
     initial begin
         reset_cache();
 
-        $display("Beginning tests");
+        $display("[status] beginning tests");
         write_value(8'd55, 16'd12);
         check_data(8'd55);
 
@@ -148,7 +148,7 @@ module cache_tb;
         check_data(8'd34);
         read_value(16'd12);
         check_data(8'd21);
-        $display("All tests passed :)");
+        $display("[status] all tests passed :)");
         $stop;
     end
 endmodule
