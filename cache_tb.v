@@ -1,10 +1,12 @@
 `timescale 1 ns/10 ps
+`define SIM_MEMORY_BYTE(address) sim_memory[address * 8+:8] 
 
 module cache_tb;
     localparam period = 20;
     localparam half_period = period / 2;
 
     reg[65_534 * 8:0] sim_memory;
+    integer i;
 
     reg[24:0] cpu_request;
     reg[15:0] invalidate_address, memory_response;
@@ -124,30 +126,93 @@ module cache_tb;
         reset_cache();
 
         $display("[status] beginning tests");
+
+        $display("[test] writing and reading multiple times to addresses in same block");
         write_value(8'd55, 16'd12);
-        check_data(8'd55);
-
+        check_data(`SIM_MEMORY_BYTE(16'd12));
         write_value(8'd56, 16'd13);
-        check_data(8'd56);
+        check_data(`SIM_MEMORY_BYTE(16'd13));
         read_value(16'd12);
-        check_data(8'd55);
-
+        check_data(`SIM_MEMORY_BYTE(16'd12));
         read_value(16'd13);
-        check_data(8'd56);
-
+        check_data(`SIM_MEMORY_BYTE(16'd13));
         write_value(8'd34, 16'd13);
-        check_data(8'd34);
+        check_data(`SIM_MEMORY_BYTE(16'd13));
         read_value(16'd13);
-        check_data(8'd34);
-
+        check_data(`SIM_MEMORY_BYTE(16'd13));
         write_value(8'd21, 16'd12);
-        check_data(8'd21);
+        check_data(`SIM_MEMORY_BYTE(16'd12));
         read_value(16'd12);
-        check_data(8'd21);
+        check_data(`SIM_MEMORY_BYTE(16'd12));
         read_value(16'd13);
-        check_data(8'd34);
+        check_data(`SIM_MEMORY_BYTE(16'd13));
         read_value(16'd12);
-        check_data(8'd21);
+        check_data(`SIM_MEMORY_BYTE(16'd12));
+        write_value(8'd1, 16'd13);
+        check_data(`SIM_MEMORY_BYTE(16'd13));
+        write_value(8'd4, 16'd12);
+        check_data(`SIM_MEMORY_BYTE(16'd12));
+        read_value(16'd12);
+        check_data(`SIM_MEMORY_BYTE(16'd12));
+        read_value(16'd13);
+        check_data(`SIM_MEMORY_BYTE(16'd13));
+
+        $display("[test] writing and reading to addresses in adjacent blocks");
+        write_value(8'd34, 16'd14);
+        check_data(`SIM_MEMORY_BYTE(16'd14));
+        write_value(8'd127, 16'd15);
+        check_data(`SIM_MEMORY_BYTE(16'd15));
+        read_value(16'd14);
+        check_data(`SIM_MEMORY_BYTE(16'd14));
+        read_value(16'd13);
+        check_data(`SIM_MEMORY_BYTE(16'd13));
+        write_value(8'd137, 16'd12);
+        check_data(`SIM_MEMORY_BYTE(16'd12));
+        read_value(16'd15);
+        check_data(`SIM_MEMORY_BYTE(16'd15));
+        read_value(16'd12);
+        check_data(`SIM_MEMORY_BYTE(16'd12));
+        $display("[test] writing to block 0");
+        write_value(8'd21, 16'd0);
+        check_data(`SIM_MEMORY_BYTE(16'd0));
+        write_value(8'd23, 16'd1);
+        check_data(`SIM_MEMORY_BYTE(16'd1));
+        read_value(16'd0);
+        check_data(`SIM_MEMORY_BYTE(16'd0));
+        read_value(16'd1);
+        check_data(`SIM_MEMORY_BYTE(16'd1));
+
+        $display("[test] writing to block 65534/65535");
+        write_value(8'd33, 16'd65534);
+        check_data(`SIM_MEMORY_BYTE(16'd65534));
+        read_value(16'd65534);
+        check_data(`SIM_MEMORY_BYTE(16'd65534));
+        write_value(8'd34, 16'd65535);
+        check_data(`SIM_MEMORY_BYTE(16'd65535));
+        read_value(16'd65535);
+        check_data(`SIM_MEMORY_BYTE(16'd65535));
+
+        $display("[test] resseting cache, setting sim_memory to 0, and reading all values");
+        reset_cache();
+        for(i = 0; i < 65535; i = i + 1) begin
+            `SIM_MEMORY_BYTE(i) = 8'd0;
+        end
+
+        for(i = 0; i < 65535; i = i + 1) begin
+            read_value(i[15:0]);
+            check_data(`SIM_MEMORY_BYTE(i[15:0]));
+        end
+        
+        $display("[test] resetting cache, setting random values in sim_memory, and reading all values");
+        reset_cache();
+        for(i = 0; i < 65535; i = i + 1) begin
+            `SIM_MEMORY_BYTE(i) = $random();
+        end
+
+        for(i = 0; i < 65535; i = i + 1) begin
+            read_value(i[15:0]);
+            check_data(`SIM_MEMORY_BYTE(i[15:0]));
+        end
         $display("[status] all tests passed :)");
         $stop;
     end
