@@ -15,12 +15,14 @@
 `define CPU_REQUEST_INDEX 7:1
 `define CPU_REQUEST_OFFSET 0
 `define CACHE_MEM_VALIDITY (`NUM_VALIDITY_BITS + `NUM_TAG_BITS + `CACHE_BITS_PER_BLOCK - 1)
-`define CACHE_MEM_TAG (`NUM_TAG_BITS + `CACHE_BITS_PER_BLOCK - 1):(`CACHE_BITS_PER_BLOCK - 1)
+`define CACHE_MEM_TAG (`NUM_TAG_BITS + `CACHE_BITS_PER_BLOCK - 1):(`CACHE_BITS_PER_BLOCK)
 `define CACHE_MEM_DATA (`CACHE_BITS_PER_BLOCK - 1):0
 `define CACHE_MEM_DATA_UPPER 15:8
 `define CACHE_MEM_DATA_LOWER 7:0
 `define MEMORY_RESPONSE_UPPER 15:8
 `define MEMORY_RESPONSE_LOWER 7:0
+`define INVALIDATE_ADDRESS_TAG 15:8
+`define INVALIDATE_ADDRESS_INDEX 7:1
 
 /* We send a memory request for a specific address.
 *  The memory response is an entire 16 bits so we can fill the cache entry.
@@ -155,15 +157,11 @@ module cache(
             end
         endcase
     end
-    /*
-    * Receive request on cpu_bus (read/write?)
-    * Decode the cpu_request into r/w, data, address
-    *   -Read:
-    *       Hit - in cache, return to cpu
-    *       Miss - not in cache, fetch from main memory
-    *   -Write:
-    *       write data to address
-    *   yes - put the data on to_cpu
-    *   no - put request on memory_bus
-    */
+
+    always @(invalidate_address) begin
+        // match in cache_mem
+        if(cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_TAG] == invalidate_address[`INVALIDATE_ADDRESS_TAG]) begin
+            cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_VALIDITY] <= 1'b0;
+        end
+    end
 endmodule
