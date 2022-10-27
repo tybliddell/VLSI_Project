@@ -24,16 +24,7 @@
 `define INVALIDATE_ADDRESS_TAG 15:8
 `define INVALIDATE_ADDRESS_INDEX 7:1
 
-/* We send a memory request for a specific address.
-*  The memory response is an entire 16 bits so we can fill the cache entry.
-*  This is so we can actually know if an entry is valid
-*  (wouldn't work if we set half without knowing the other half was set).
-*/
 module cache(
-    /* Should writes only write 8 bits of data? Since we are doing byte addressable reads
-    *  it doesn't make sense to do a write of 16 bits to an odd address- shouldn't remove the data before/after that spot
-    *  => cpu_request should become 1 + 8 + 16 bits wide! Same for memory request
-    */
     input [24:0] cpu_request, /* 1 bit for r/w, 8 bits for data, 16 bits for address */
     input cpu_request_ready, /* cpu_request is populated, ready for processing */
     input clock, input reset,
@@ -45,8 +36,6 @@ module cache(
     output reg [7:0] data_out, /* return data to cpu */
     output reg data_out_ready /* return data to cpu is ready */
 );
-    // An entry becomes invalid when another cache writes to an address stored in multiple caches or
-    // a write overwrites a current valid entry 
 
     /* 1 bit for valid, 8 bits for tag, 16 bits for data */
     reg [`NUM_VALIDITY_BITS + `NUM_TAG_BITS + `CACHE_BITS_PER_BLOCK - 1:0] cache_mem[`CACHE_BLOCK_COUNT-1:0]; 
@@ -73,7 +62,6 @@ module cache(
     always @(state) begin
         case(state)
             RESET: begin
-                /* TODO: set the valid bit to zero */
                 for(i = 0; i < `CACHE_BLOCK_COUNT; i = i + 1) begin
                     cache_mem[i][`CACHE_MEM_VALIDITY] <= 1'd0;
                 end
