@@ -37,4 +37,31 @@ transcript*
 sc_dpiheader.h
 vsim.dbg
 
-## May want to add Synopsys stuff in the future
+# From skywater-template repo
+alib-52
+checksum_info.txt
+crte_*.txt
+default.svf
+DESIGN_LIBS
+dw_*
+*.gz
+innovus.cmd*
+innovus/DBS
+innovus/GDS
+innovus/HDL
+innovus/innovus.cmd*
+innovus.log*
+innovus/*.log*
+innovus/RPT
+innovus/timingReports
+*.cts.*
+*.rpt
+Synopsys_*.txt
+*.wlf
+work
+project_1/*.cache
+transcript
+vivado.jou
+*.cr.mti
+*_mapped.v
+*.ddc
