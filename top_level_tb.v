@@ -8,16 +8,22 @@ module top_level_tb;
     reg[65_535 * 8:0] sim_memory;
     integer i;
 
-    reg[24:0] cpu_request_0, cpu_request_1;
-    wire [15:0] invalidate_address_0, invalidate_address_1;
+    reg clock, reset;
+    reg [24:0] cpu_request_0, cpu_request_1;
+    reg cpu_request_ready_0, cpu_request_ready_1;
+    reg [15:0] memory_response_0, memory_response_1;
+    reg memory_response_ready_0, memory_response_ready_1;
 
-    reg clock, reset, cpu_request_ready_0, cpu_request_ready_1, memory_response_ready_0, memory_response_ready_1;
+    wire [7:0] data_out_0, data_out_1;
+    wire data_out_ready_0, data_out_ready_1;
+    wire [24:0] memory_request_0, memory_request_1;
+    wire memory_request_ready_0, memory_request_ready_1;
 
-    wire [24:0] memory_request;
-    wire [7:0] data_out;
-    wire data_out_ready, memory_request_ready;
-
-    top_level uut();
+    top_level uut(.cpu_request_0(cpu_request_0), .cpu_request_1(cpu_request_1), .cpu_request_ready_0(cpu_request_ready_0), .cpu_request_ready_1(cpu_request_ready_1),
+                .memory_response_0(memory_response_0), .memory_response_1(memory_response_1), .memory_response_ready_0(memory_response_ready_0), .memory_response_ready_1(memory_response_ready_1),
+                .data_out_0(data_out_0), .data_out_1(data_out_1), .data_out_ready_0(data_out_ready_0), .data_out_ready_1(data_out_ready_1), 
+                .memory_request_0(memory_request_0), .memory_request_1(memory_request_1), .memory_request_ready_0(memory_request_ready_0), .memory_request_ready_1(memory_request_ready_1),
+                .clock(clock), .reset(reset));
 
     always #half_period begin
         clock = ~clock;
@@ -28,11 +34,14 @@ module top_level_tb;
         begin
             clock = 1'b0;
             reset = 1'b1;
-            cpu_request_ready = 1'd0;
-            memory_response_ready = 1'd0;
-            cpu_request = 25'd0;
-            invalidate_address = 16'd0;
-            memory_response = 16'd0;
+            cpu_request_ready_0 = 1'd0;
+            memory_response_ready_0 = 1'd0;
+            cpu_request_0 = 25'd0;
+            memory_response_0 = 16'd0;
+            cpu_request_ready_1 = 1'd0;
+            memory_response_ready_1 = 1'd0;
+            cpu_request_1 = 25'd0;
+            memory_response_1 = 16'd0;
             sim_memory = 65_536'd0;
             #period;
             reset = 1'd0;
@@ -44,93 +53,122 @@ module top_level_tb;
     endtask
 
     /* Write data to address, check value against memory */
-    task write_value_and_check;
+    task write_value;
         input [7:0] data;
         input [15:0] address;
+        input cpu;
         begin
             #period;
-            cpu_request = { 1'd1, data, address };
-            cpu_request_ready = 1'd1;
-
-            while(data_out_ready == 1'd0 && memory_request_ready == 1'd0) begin
-                #period;
-            end
-            // simulate memory
-            if(memory_request_ready == 1'd1) begin
-                sim_memory[address * 8+:8] = data;
-                // starting at address * 8 bits going to address * 8 + 16 bits
-                if(address[0] == 1'b0)
-                    memory_response = sim_memory[address * 8+:16];
-                // starting at (address - 1) * 8 bits going to (address - 1) * 8 + 16 bits
-                else
-                    memory_response = sim_memory[(address - 1) * 8+:16];
-                memory_response_ready = 1'd1;
-                // wait for data
-                while(data_out_ready == 1'd0) begin
+            if(cpu == 0) begin
+                cpu_request_0 = { 1'd1, data, address };
+                cpu_request_ready_0 = 1'd1;
+                while(data_out_ready_0 == 1'd0 && memory_request_ready_0 == 1'd0)
                     #period;
+                if(memory_request_ready_0 == 1'd1) begin
+                    sim_memory[address * 8+:8] = data;
+                    if(address[0] == 1'd0)
+                        memory_response_0 = sim_memory[address * 8+:16];
+                    else
+                        memory_response_0 = sim_memory[(address - 1) * 8+:16];
+                    memory_response_ready_0 = 1'd1;
+                    while(data_out_ready_0 == 1'd0)
+                        #period;
+                end
+            end
+            else begin
+                cpu_request_1 = { 1'd1, data, address };
+                cpu_request_ready_1 = 1'd1;
+                while(data_out_ready_1 == 1'd0 && memory_request_ready_1 == 1'd0)
+                    #period;
+                if(memory_request_ready_1 == 1'd1) begin
+                    sim_memory[address * 8+:8] = data;
+                    if(address[0] == 1'd0)
+                        memory_response_1 = sim_memory[address * 8+:16];
+                    else
+                        memory_response_1 = sim_memory[(address - 1) * 8+:16];
+                    memory_response_ready_1 = 1'd1;
+                    while(data_out_ready_1 == 1'd0)
+                        #period;
                 end
             end
 
-            cpu_request = 25'd0;
-            cpu_request_ready = 1'd0;
-            memory_response = 16'd0;
-            memory_response_ready = 1'd0;
-
-            check_data(`SIM_MEMORY_BYTE(address));
+            cpu_request_0 = 25'd0;
+            cpu_request_1 = 25'd0;
+            cpu_request_ready_0 = 1'd0;
+            cpu_request_ready_1 = 1'd0;
+            memory_response_0 = 16'd0;
+            memory_response_1 = 16'd0;
+            memory_response_ready_0 = 1'd0;
+            memory_response_ready_0 = 1'd0;
         end
     endtask
 
     /* Read data from address, check value against memory */
-    task read_value_and_check;
+    task read_value;
         input [15:0] address;
+        input cpu;
         begin
             #period;
-            cpu_request = { 1'd0, 8'd0, address };
-            cpu_request_ready = 1'd1;
-            while(data_out_ready == 1'd0 && memory_request_ready == 1'd0) begin
-                #period;
-            end
-            // simulate memory
-            if(memory_request_ready == 1'd1) begin
-                // starting at address * 8 bits going to address * 8 + 16 bits
-                if(address[0] == 1'b0)
-                    memory_response = sim_memory[address * 8+:16];
-                // starting at (address - 1) * 8 bits going to (address - 1) * 8 + 16 bits
-                else
-                    memory_response = sim_memory[(address - 1) * 8+:16];
-                memory_response_ready = 1'd1;
-                // wait for data
-                while(data_out_ready == 1'd0) begin
+            if(cpu == 0) begin
+                cpu_request_0 = { 1'd0, 8'd0, address };
+                cpu_request_ready_0 = 1'd1;
+                while(data_out_ready_0 == 1'd0 && memory_request_ready_0 == 1'd0)
                     #period;
+                if(memory_request_ready_0 == 1'd1) begin
+                    if(address[0] == 1'd0)
+                        memory_response_0 = sim_memory[address * 8+:16];
+                    else
+                        memory_response_0 = sim_memory[(address - 1) * 8+:16];
+                    memory_response_ready_0 = 1'd1;
+                    while(data_out_ready_0 == 1'd0)
+                        #period;
+                end
+            end
+            else begin
+                cpu_request_1 = { 1'd0, 8'd0, address };
+                cpu_request_ready_1 = 1'd1;
+                while(data_out_ready_1 == 1'd0 && memory_request_ready_1 == 1'd0)
+                    #period;
+                if(memory_request_ready_1 == 1'd1) begin
+                    if(address[0] == 1'd0)
+                        memory_response_1 = sim_memory[address * 8+:16];
+                    else
+                        memory_response_1 = sim_memory[(address - 1) * 8+:16];
+                    memory_response_ready_1 = 1'd1;
+                    while(data_out_ready_1 == 1'd0)
+                        #period;
                 end
             end
 
-            cpu_request = 25'd0;
-            cpu_request_ready = 1'd0;
-            memory_response = 16'd0;
-            memory_response_ready = 1'd0;
-
-            check_data(`SIM_MEMORY_BYTE(address));
+            cpu_request_0 = 25'd0;
+            cpu_request_1 = 25'd0;
+            cpu_request_ready_0 = 1'd0;
+            cpu_request_ready_1 = 1'd0;
+            memory_response_0 = 16'd0;
+            memory_response_1 = 16'd0;
+            memory_response_ready_0 = 1'd0;
+            memory_response_ready_1 = 1'd0;
         end
     endtask
 
     /* Makes sure that data_out is the expected 8 bit value */
     task check_data;
         input [7:0] expected;
+        input cpu;
         begin
-            if(data_out != expected) begin
-                $display("[ERROR] result:%d expected:%d\nError on Line Number = %0d",data_out,expected,`__LINE__);
-                $stop;
+            if(cpu == 0) begin
+                if(data_out_0 != expected) begin
+                    $display("[ERROR] result:%d expected:%d\nError on Line Number = %0d",data_out_0,expected,`__LINE__);
+                    $stop;
+                end
             end
-        end
-    endtask
-
-    task invalidate;
-        input [15:0] address;
-        begin
-            #period;
-            invalidate_address <= address;
-            #period;
+            else begin
+                if(data_out_1 != expected) begin
+                    $display("[ERROR] result:%d expected:%d\nError on Line Number = %0d",data_out_1,expected,`__LINE__);
+                    $stop;
+                end
+            end
+            
         end
     endtask
 
@@ -138,63 +176,10 @@ module top_level_tb;
         reset_cache();
 
         $display("[status] beginning tests");
-
-        $display("[test] writing and reading multiple times to addresses in same block");
-        write_value_and_check(8'd55, 16'd12);
-        write_value_and_check(8'd56, 16'd13);
-        read_value_and_check(16'd12);
-        read_value_and_check(16'd13);
-        write_value_and_check(8'd34, 16'd13);
-        read_value_and_check(16'd13);
-        write_value_and_check(8'd21, 16'd12);
-        read_value_and_check(16'd12);
-        read_value_and_check(16'd13);
-        read_value_and_check(16'd12);
-        write_value_and_check(8'd1, 16'd13);
-        write_value_and_check(8'd4, 16'd12);
-        read_value_and_check(16'd12);
-        read_value_and_check(16'd13);
-
-        $display("[test] writing and reading to addresses in adjacent blocks");
-        write_value_and_check(8'd34, 16'd14);
-        write_value_and_check(8'd127, 16'd15);
-        read_value_and_check(16'd14);
-        read_value_and_check(16'd13);
-        write_value_and_check(8'd137, 16'd12);
-        read_value_and_check(16'd15);
-        read_value_and_check(16'd12);
-
-        $display("[test] writing to block 0");
-        write_value_and_check(8'd21, 16'd0);
-        write_value_and_check(8'd23, 16'd1);
-        read_value_and_check(16'd0);
-        read_value_and_check(16'd1);
-
-        $display("[test] writing to block 65534/65535");
-        write_value_and_check(8'd33, 16'd65534);
-        read_value_and_check(16'd65534);
-        write_value_and_check(8'd34, 16'd65535);
-        read_value_and_check(16'd65535);
-
-        $display("[test] resseting cache, setting sim_memory to 0, and reading all values");
-        reset_cache();
-        for(i = 0; i < 65535; i = i + 1) begin
-            read_value_and_check(i[15:0]);
-        end
-        
-        $display("[test] resetting cache, setting random values in sim_memory, and reading all values");
-        reset_cache();
-        for(i = 0; i < 65535; i = i + 1) begin
-            `SIM_MEMORY_BYTE(i) = $random();
-        end
-        for(i = 0; i < 65535; i = i + 1) begin
-            read_value_and_check(i[15:0]);
-        end
-
-        $display("[test] invalidate entry after writing");
-        write_value_and_check(8'd15, 16'd16);
-        invalidate(16'd16);
-        read_value_and_check(16'd16);
+        write_value(8'd16, 16'd23, 0);
+        write_value(8'd25, 16'd23, 1);
+        read_value(16'd23, 0);
+        check_data(`SIM_MEMORY_BYTE(16'd23), 0);
 
         $display("[status] all tests passed :)");
         $stop;
