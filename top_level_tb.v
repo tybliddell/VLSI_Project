@@ -100,6 +100,9 @@ module top_level_tb;
             memory_response_1 = 16'd0;
             memory_response_ready_0 = 1'd0;
             memory_response_ready_0 = 1'd0;
+
+            check_data(`SIM_MEMORY_BYTE(address), cpu);
+
         end
     endtask
 
@@ -148,6 +151,8 @@ module top_level_tb;
             memory_response_1 = 16'd0;
             memory_response_ready_0 = 1'd0;
             memory_response_ready_1 = 1'd0;
+
+            check_data(`SIM_MEMORY_BYTE(address), cpu);
         end
     endtask
 
@@ -176,10 +181,20 @@ module top_level_tb;
         reset_cache();
 
         $display("[status] beginning tests");
+
+        $display("[test] writing different data to same location from each cpu");
         write_value(8'd16, 16'd23, 0);
         write_value(8'd25, 16'd23, 1);
         read_value(16'd23, 0);
-        check_data(`SIM_MEMORY_BYTE(16'd23), 0);
+        read_value(16'd23, 1);
+        read_value(16'd23, 0);
+
+        write_value(8'd255, 16'd34, 1);
+        read_value(16'd34, 0);
+        read_value(16'd34, 1);
+        write_value(8'd128, 16'd34, 1);
+        read_value(16'd34, 0);
+        read_value(16'd34, 1);
 
         $display("[status] all tests passed :)");
         $stop;
