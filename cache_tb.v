@@ -1,11 +1,12 @@
 `timescale 1 ns/10 ps
 `define SIM_MEMORY_BYTE(address) sim_memory[address * 8+:8] 
+`define SIM_MEM_SIZE (65_536*8) - 1
 
 module cache_tb;
     localparam period = 20;
     localparam half_period = period / 2;
 
-    reg[65_535 * 8:0] sim_memory;
+    reg[`SIM_MEM_SIZE:0] sim_memory;
     integer i;
 
     reg[24:0] cpu_request;

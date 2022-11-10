@@ -1,12 +1,16 @@
 `timescale 1 ns/10 ps
 `define SIM_MEMORY_BYTE(address) sim_memory[address * 8+:8] 
+`define SIM_MEM_SIZE (65_536*8) - 1
 
 module top_level_tb;
     localparam period = 20;
     localparam half_period = period / 2;
 
-    reg[65_535 * 8:0] sim_memory;
-    integer i;
+    reg[`SIM_MEM_SIZE:0] sim_memory;
+    integer i, random_cpu;
+    reg [15:0] test_addy;
+    reg [7:0] test_data;
+
 
     reg clock, reset;
     reg [24:0] cpu_request_0, cpu_request_1;
@@ -53,7 +57,7 @@ module top_level_tb;
     endtask
 
     /* Write data to address, check value against memory */
-    task write_value;
+    task write_value_and_check;
         input [7:0] data;
         input [15:0] address;
         input cpu;
@@ -107,7 +111,7 @@ module top_level_tb;
     endtask
 
     /* Read data from address, check value against memory */
-    task read_value;
+    task read_value_and_check;
         input [15:0] address;
         input cpu;
         begin
@@ -183,18 +187,43 @@ module top_level_tb;
         $display("[status] beginning tests");
 
         $display("[test] writing different data to same location from each cpu");
-        write_value(8'd16, 16'd23, 0);
-        write_value(8'd25, 16'd23, 1);
-        read_value(16'd23, 0);
-        read_value(16'd23, 1);
-        read_value(16'd23, 0);
+        write_value_and_check(8'd16, 16'd23, 0);
+        write_value_and_check(8'd25, 16'd23, 1);
+        read_value_and_check(16'd23, 0);
+        read_value_and_check(16'd23, 1);
+        read_value_and_check(16'd23, 0);
 
-        write_value(8'd255, 16'd34, 1);
-        read_value(16'd34, 0);
-        read_value(16'd34, 1);
-        write_value(8'd128, 16'd34, 1);
-        read_value(16'd34, 0);
-        read_value(16'd34, 1);
+        write_value_and_check(8'd255, 16'd34, 1);
+        read_value_and_check(16'd34, 0);
+        read_value_and_check(16'd34, 1);
+        write_value_and_check(8'd128, 16'd34, 1);
+        read_value_and_check(16'd34, 0);
+        read_value_and_check(16'd34, 1);
+
+        $display("[test] resetting cache, setting random vals in sim_mem");
+        reset_cache();
+        for(i = 0; i < 65535; i = i + 1) begin
+            `SIM_MEMORY_BYTE(i) = $random();
+        end
+
+        $display("[test] filling random cache with values");
+        for(i = 0; i < 65535; i = i + 1) begin
+            random_cpu = $random() %2; 
+            read_value_and_check(i[15:0], random_cpu);
+        end
+
+        $display("[test] writing and checking both cpus");
+        for(i = 0; i < 100; i = i + 1) begin
+            test_addy[15:0] = $random();
+            test_data[7:0] = $random();
+            random_cpu = $random() %2;
+
+            write_value_and_check(test_data[7:0], test_addy[15:0], random_cpu);
+            if(random_cpu == 0)
+                read_value_and_check(test_addy[15:0], 1);
+            else
+                read_value_and_check(test_addy[15:0], 0);
+        end
 
         $display("[status] all tests passed :)");
         $stop;
