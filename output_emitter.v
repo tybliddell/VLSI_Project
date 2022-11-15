@@ -1,15 +1,15 @@
-`define REG_SIZE $clog2(OUTPUT_WIDTH)
+`define REG_SIZE $clog2(INPUT_WIDTH)
 /*
-* Populate data, pull ready to be high, and then wait at least
+* Populate data, pull start to be high, and then wait at least
 * OUTPUT_WIDTH + 1 clock cylces
 * 
 */
 module output_emitter
-#(parameter OUTPUT_WIDTH = 16)
+#(parameter INPUT_WIDTH = 16)
 (
-    input [OUTPUT_WIDTH-1:0] data,
+    input [INPUT_WIDTH-1:0] data,
     input fast_clk,
-    input ready,
+    input start,
     input reset,
     output reg serial_out,
     output reg serial_done
@@ -23,17 +23,17 @@ module output_emitter
             serial_done <= 1'd0;
             counter <= {`REG_SIZE{'d0}};
         end
-        else if(ready) begin
+        else if(start) begin
             serial_out <= data[counter];
-            if(counter < OUTPUT_WIDTH) begin
+            if(counter < INPUT_WIDTH) begin
                 counter <= counter + 1'd1;
-                serial_out <= 1'd0;
+                serial_done <= 1'd0;
             end
             else begin
-                serial_out <= 1'd0;
+                serial_done <= 1'd1;
             end
         end
-        else if(!ready) begin
+        else if(!start) begin
             counter <= {`REG_SIZE{'d0}};
             serial_out <= 1'd0;
             serial_done <= 1'd0;
