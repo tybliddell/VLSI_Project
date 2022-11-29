@@ -27,15 +27,24 @@ module cache(
     parameter ALLOCATE = 3'd6;
     reg [2:0] state = IDLE;
     reg [2:0] next_state = IDLE;
+    reg [15:0] last_invalidate;
 
     always @(posedge clock) begin
-        if(!reset)
+        if(!reset) begin
             state <= RESET;
+        end
         else
             state <= next_state;
     end
 
     always @(state) begin
+        // match in cache_mem
+        if(invalidate_address !== last_invalidate) begin
+            if(cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_TAG] == invalidate_address[`INVALIDATE_ADDRESS_TAG]) begin
+                cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_VALIDITY] <= 1'b0;
+            end
+        end
+        last_invalidate <= invalidate_address;
         case(state)
             RESET: begin
                 for(i = 0; i < `CACHE_BLOCK_COUNT; i = i + 1) begin
@@ -120,12 +129,5 @@ module cache(
                 end
             end
         endcase
-    end
-
-    always @(invalidate_address) begin
-        // match in cache_mem
-        if(cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_TAG] == invalidate_address[`INVALIDATE_ADDRESS_TAG]) begin
-            cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_VALIDITY] <= 1'b0;
-        end
     end
 endmodule
