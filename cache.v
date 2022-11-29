@@ -32,6 +32,7 @@ module cache(
     always @(posedge clock) begin
         if(!reset) begin
             state <= RESET;
+            last_invalidate <= 16'd0;
         end
         else
             state <= next_state;
@@ -39,7 +40,7 @@ module cache(
 
     always @(state) begin
         // match in cache_mem
-        if(invalidate_address !== last_invalidate) begin
+        if(invalidate_address != last_invalidate) begin
             if(cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_TAG] == invalidate_address[`INVALIDATE_ADDRESS_TAG]) begin
                 cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_VALIDITY] <= 1'b0;
             end

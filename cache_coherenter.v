@@ -12,15 +12,20 @@ module cache_coherenter(
     output reg [15:0] cache_invalidate_0, cache_invalidate_1
 );
 
-    always @(cache_change_0) begin
-        if(cache_change_0[`CPU_REQUEST_COMMAND] == `WRITE) begin
-            cache_invalidate_1 <= cache_change_0[`INVALIDATE_ADDRESS];
-        end
-    end
+    reg [15:0] last_0, last_1;
 
-    always @(cache_change_1) begin
-        if(cache_change_1[`CPU_REQUEST_COMMAND] == `WRITE) begin
-            cache_invalidate_0 <= cache_change_1[`INVALIDATE_ADDRESS];
+    always @(posedge clock) begin
+        if(!reset) begin
+            last_0 <= 16'd0;
+            last_1 <= 16'd0;
+            cache_invalidate_0 <= 16'd0;
+            cache_invalidate_1 <= 16'd0;
+        end
+        else begin
+            if(cache_change_0[`CPU_REQUEST_COMMAND] == `WRITE)
+                cache_invalidate_1 <= cache_change_0[`INVALIDATE_ADDRESS];
+            if(cache_change_1[`CPU_REQUEST_COMMAND] == `WRITE)
+                cache_invalidate_0 <= cache_change_1[`INVALIDATE_ADDRESS];
         end
     end
 endmodule
