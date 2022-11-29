@@ -12,12 +12,8 @@ module cache_coherenter(
     output reg [15:0] cache_invalidate_0, cache_invalidate_1
 );
 
-    reg [15:0] last_0, last_1;
-
     always @(posedge clock) begin
         if(!reset) begin
-            last_0 <= 16'd0;
-            last_1 <= 16'd0;
             cache_invalidate_0 <= 16'd0;
             cache_invalidate_1 <= 16'd0;
         end
