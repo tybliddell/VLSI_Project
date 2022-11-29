@@ -32,7 +32,6 @@ module cache(
     always @(posedge clock) begin
         if(!reset) begin
             state <= RESET;
-            last_invalidate <= 16'd0;
         end
         else
             state <= next_state;
