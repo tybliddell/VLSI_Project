@@ -30,25 +30,26 @@ module cache(
     reg [15:0] last_invalidate;
 
     always @(posedge clock) begin
-        if(!reset) begin
-            state <= RESET;
-        end
+        if(!reset)
+            state = RESET;
         else
-            state <= next_state;
-    end
+            state = next_state;
 
-    always @(state) begin
         // match in cache_mem
         if(invalidate_address != last_invalidate) begin
             if(cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_TAG] == invalidate_address[`INVALIDATE_ADDRESS_TAG]) begin
                 cache_mem[invalidate_address[`INVALIDATE_ADDRESS_INDEX]][`CACHE_MEM_VALIDITY] <= 1'b0;
             end
         end
+        
         last_invalidate <= invalidate_address;
+        data_out <= data_out;
+        memory_request <= memory_request;
+
         case(state)
             RESET: begin
                 for(i = 0; i < `CACHE_BLOCK_COUNT; i = i + 1) begin
-                    cache_mem[i][`CACHE_MEM_VALIDITY] <= 1'd0;
+                    cache_mem[i][`NUM_VALIDITY_BITS + `NUM_TAG_BITS + `CACHE_BITS_PER_BLOCK - 1:0] <= {`NUM_VALIDITY_BITS + `NUM_TAG_BITS + `CACHE_BITS_PER_BLOCK{'d0}};
                 end
                 memory_request <= 25'd0;
                 memory_request_ready <= 1'd0;
@@ -128,6 +129,13 @@ module cache(
                     data_out_ready <= 1'd0;
                 end
             end
+            default: begin
+                next_state <= IDLE;
+                memory_request <= 25'd0;
+                memory_request_ready <= 1'd0;
+                data_out <= 8'd0;
+                data_out_ready <= 1'd0;
+            end            
         endcase
     end
 endmodule
