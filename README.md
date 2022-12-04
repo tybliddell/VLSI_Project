@@ -17,5 +17,6 @@ Include the following files in a modelsim project:
 -cache_coherenter_tb.v
 -collector_emitter_tb.v
 -top_level_tb.v
+-cache_tb.v
 
 Each of the testbenches may be run individually. The output will indicate if it completed with or without errors.
