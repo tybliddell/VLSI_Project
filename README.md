@@ -8,14 +8,16 @@ Braxton Chappell
 # Instructions
 Include the following files in a modelsim project:
 
--cache.v
--cache_coherenter.v
--input_collector.v
--output_emitter.v
--top_level.v
--macros.vh
--cache_coherenter_tb.v
--collector_emitter_tb.v
--top_level_tb.v
+-src/cache.v
+-src/cache_coherenter.v
+-src/input_collector.v
+-src/output_emitter.v
+-src/top_level.v
+-src/macros.vh
+
+-tb/cache_coherenter_tb.v
+-tb/collector_emitter_tb.v
+-tb/top_level_tb.v
+-tb/cache_tb.v
 
 Each of the testbenches may be run individually. The output will indicate if it completed with or without errors.
