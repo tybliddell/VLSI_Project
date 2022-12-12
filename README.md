@@ -2,8 +2,8 @@
 This repo is for our Fall 2022 VLSI group project at the University of Utah. We designed a 256-byte direct mapped cache and a cache controller that uses a snooping-based coherence mechanism with a write-update coherence protocol. The project was designed in Verilog and brought all the way to tape out using a TSMC 180 nm design library. Testbenches were created to test individual modules as well as the entire system. 
 
 # Members:
-Tyler Liddell
-McKay Mower
+Tyler Liddell\
+McKay Mower\
 Braxton Chappell 
 
 # Instructions
